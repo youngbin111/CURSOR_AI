@@ -86,8 +86,14 @@ const NavigationBarNew = ({ activeTab, onTabChange }) => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               onClick={() => onTabChange(item.id)}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
+              onMouseEnter={(e) => {
+                setHoveredItem(item.id);
+                e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                setHoveredItem(null);
+                e.target.style.borderColor = 'transparent';
+              }}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -102,12 +108,6 @@ const NavigationBarNew = ({ activeTab, onTabChange }) => {
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 transform: isHovered ? 'scale(1.05) translateX(8px)' : 'scale(1) translateX(0)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.borderColor = 'transparent';
               }}
             >
               <motion.div
