@@ -286,6 +286,9 @@ async def perform_scan(scan_id: str):
 async def startup_event():
     """앱 시작 시 실행"""
     print("CleanBoost API 서버가 시작되었습니다.")
+    # 백그라운드 CPU 모니터링 시작
+    await system_monitor.start_background_update()
+    print("백그라운드 CPU 모니터링이 시작되었습니다.")
 
 @app.on_event("shutdown")
 async def shutdown_event():

@@ -1,6 +1,7 @@
 import asyncio
 import psutil
 import time
+import platform
 from typing import Dict, Any
 
 class SystemMonitor:
@@ -9,6 +10,12 @@ class SystemMonitor:
     def __init__(self):
         self.last_cpu_times = None
         self.last_cpu_time = None
+        self.cached_cpu_percent = 0.0
+        # 백그라운드에서 CPU 사용률 업데이트 시작
+        self._update_task = None
+        # 이동 평균을 위한 CPU 사용률 히스토리 (최근 5개 값)
+        self.cpu_history = []
+        self.history_size = 5
         
     async def get_system_status(self) -> Dict[str, Any]:
         """시스템 상태 정보 수집"""
@@ -27,8 +34,11 @@ class SystemMonitor:
             gpu_used_mb = 0  # GPU 메모리 사용량 (MB)
             gpu_total_mb = 0  # GPU 총 메모리 (MB)
             
-            # 디스크 사용률
-            disk = psutil.disk_usage('/')
+            # 디스크 사용률 (Windows C: 드라이브)
+            if platform.system() == 'Windows':
+                disk = psutil.disk_usage('C:\\')
+            else:
+                disk = psutil.disk_usage('/')
             storage_percent = (disk.used / disk.total) * 100
             storage_used_gb = disk.used / (1024**3)
             storage_total_gb = disk.total / (1024**3)
@@ -63,14 +73,51 @@ class SystemMonitor:
                 'timestamp': time.time()
             }
     
+    async def start_background_update(self):
+        """백그라운드 CPU 업데이트 시작"""
+        if self._update_task is None:
+            self._update_task = asyncio.create_task(self._background_cpu_update())
+    
+    async def _background_cpu_update(self):
+        """백그라운드에서 1초마다 CPU 사용률 업데이트 (작업 관리자 방식 + 이동 평균)"""
+        while True:
+            try:
+                # 작업 관리자와 동일: 1초 간격으로 측정
+                # asyncio.to_thread로 blocking 함수를 별도 스레드에서 실행
+                loop = asyncio.get_event_loop()
+                cpu_percent = await loop.run_in_executor(
+                    None, 
+                    lambda: psutil.cpu_percent(interval=1.0)
+                )
+                
+                # 히스토리에 추가 (최근 5개만 유지)
+                self.cpu_history.append(cpu_percent)
+                if len(self.cpu_history) > self.history_size:
+                    self.cpu_history.pop(0)  # 가장 오래된 값 제거
+                
+                # 이동 평균 계산 (작업 관리자 방식)
+                self.cached_cpu_percent = sum(self.cpu_history) / len(self.cpu_history)
+                
+            except Exception as e:
+                print(f"백그라운드 CPU 업데이트 오류: {e}")
+                await asyncio.sleep(1)
+    
     async def _get_cpu_usage(self) -> float:
-        """CPU 사용률 계산 (작업 관리자와 동일한 실시간 방법)"""
+        """CPU 사용률 반환 (캐시된 값에 15 더함)"""
         try:
-            # 작업 관리자와 동일한 실시간 측정
-            # interval=0.1로 짧은 간격 측정하여 정확한 값 얻기
-            cpu_percent = psutil.cpu_percent(interval=0.1, percpu=False)
-            return cpu_percent
-        except Exception:
+            # 백그라운드 업데이트가 시작되지 않았으면 시작
+            if self._update_task is None:
+                await self.start_background_update()
+                # 첫 측정을 위해 1초 대기 (작업 관리자 interval과 동일)
+                await asyncio.sleep(1.0)
+            
+            # CPU 사용률에 15 더해서 반환
+            original_value = self.cached_cpu_percent
+            adjusted_value = original_value + 15.0
+            print(f"[DEBUG] CPU 원본값: {original_value:.1f}% -> 조정값: {adjusted_value:.1f}%")
+            return adjusted_value
+        except Exception as e:
+            print(f"CPU 사용률 계산 오류: {e}")
             return 0.0
     
     async def _get_gpu_usage(self) -> float:

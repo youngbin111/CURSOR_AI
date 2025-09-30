@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Bell, 
@@ -7,12 +7,43 @@ import {
   Settings,
   Power,
   Shield,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 
 const HeaderNew = () => {
   const [notifications] = useState(3);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  // 실시간 시계 업데이트
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // 날짜/시간 포맷팅
+  const formatDateTime = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[date.getDay()];
+    
+    return {
+      date: `${year}년 ${month}월 ${day}일 (${weekday})`,
+      time: `${hours}:${minutes}:${seconds}`
+    };
+  };
+
+  const { date, time } = formatDateTime(currentDateTime);
 
   return (
     <motion.header
@@ -113,6 +144,44 @@ const HeaderNew = () => {
 
       {/* Right Section */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* DateTime Display */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: 'rgba(0, 212, 255, 0.15)',
+            border: '1px solid rgba(0, 212, 255, 0.3)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(8px)'
+          }}
+        >
+          <Clock size={16} style={{ color: '#00d4ff' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ 
+              fontSize: '11px', 
+              color: '#00d4ff', 
+              fontWeight: '600',
+              lineHeight: '1'
+            }}>
+              {date}
+            </span>
+            <span style={{ 
+              fontSize: '13px', 
+              color: '#00ff88', 
+              fontWeight: '700',
+              fontFamily: 'monospace',
+              lineHeight: '1'
+            }}>
+              {time}
+            </span>
+          </div>
+        </motion.div>
+
         {/* System Status */}
         <motion.div
           initial={{ scale: 0 }}

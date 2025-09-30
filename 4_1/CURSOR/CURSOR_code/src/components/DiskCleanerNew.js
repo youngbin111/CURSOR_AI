@@ -370,14 +370,10 @@ const DiskCleaner = ({ systemData }) => {
     }
   };
 
-  // 긴 경로를 줄여서 표시하는 함수
-  const truncatePath = (path, maxLength = 50) => {
-    if (path.length <= maxLength) return path;
-    const parts = path.split('\\');
-    if (parts.length > 3) {
-      return `...\\${parts.slice(-2).join('\\')}`;
-    }
-    return path.substring(0, maxLength - 3) + '...';
+  // 전체 경로를 표시하는 함수 (생략하지 않음)
+  const truncatePath = (path, maxLength = 9999) => {
+    // 경로를 전체 표시
+    return path;
   };
 
   // 파일명만 추출하는 함수
@@ -449,7 +445,10 @@ const DiskCleaner = ({ systemData }) => {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>📦 짐 정리</h2>
-            <p style={{ color: '#9ca3af' }}>필요 없는 짐들을 버려서 공간을 만들어볼까요?</p>
+            <p style={{ color: '#9ca3af', marginBottom: '4px' }}>필요 없는 짐들을 버려서 공간을 만들어볼까요?</p>
+            <p style={{ color: '#6b7280', fontSize: '12px', margin: 0 }}>
+              🛡️ 안전 모드: 임시파일(1MB+), 프로그램잔여물(30일+), 브라우저캐시(7일+)만 스캔
+            </p>
           </div>
           <motion.div
             animate={{ rotate: isScanning ? 360 : 0 }}
@@ -820,15 +819,18 @@ const DiskCleaner = ({ systemData }) => {
                                       className="text-sm text-gray-400" 
                                       title={item.path}
                                       style={{ 
-                                        width: '300px',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        margin: '0'
+                                        wordBreak: 'break-all',
+                                        margin: '0 0 4px 0',
+                                        lineHeight: '1.4'
                                       }}
                                     >
-                                      {truncatePath(item.path)}
+                                      {item.path}
                                     </p>
+                                    {item.last_modified && (
+                                      <p className="text-xs text-gray-500" style={{ margin: 0 }}>
+                                        📅 마지막 수정: {item.last_modified} ({item.days_old}일 전)
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="text-right flex-shrink-0 ml-2">
@@ -1096,15 +1098,18 @@ const DiskCleaner = ({ systemData }) => {
                                       className="text-sm text-gray-400" 
                                       title={item.path}
                                       style={{ 
-                                        width: '300px',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        margin: '0'
+                                        wordBreak: 'break-all',
+                                        margin: '0 0 4px 0',
+                                        lineHeight: '1.4'
                                       }}
                                     >
-                                      {truncatePath(item.path)}
+                                      {item.path}
                                     </p>
+                                    {item.last_modified && (
+                                      <p className="text-xs text-gray-500" style={{ margin: 0 }}>
+                                        📅 마지막 수정: {item.last_modified} ({item.days_old}일 전)
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="text-right flex-shrink-0 ml-2">
