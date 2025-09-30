@@ -24,6 +24,8 @@ class SystemMonitor:
             
             # GPU 사용률 (기본값, 실제로는 GPU 라이브러리 필요)
             gpu_percent = await self._get_gpu_usage()
+            gpu_used_mb = 0  # GPU 메모리 사용량 (MB)
+            gpu_total_mb = 0  # GPU 총 메모리 (MB)
             
             # 디스크 사용률
             disk = psutil.disk_usage('/')
@@ -37,6 +39,8 @@ class SystemMonitor:
                 'ram_used_gb': round(ram_used_gb, 2),
                 'ram_total_gb': round(ram_total_gb, 2),
                 'gpu_percent': round(gpu_percent, 1),
+                'gpu_used_mb': round(gpu_used_mb, 2),
+                'gpu_total_mb': round(gpu_total_mb, 2),
                 'storage_percent': round(storage_percent, 1),
                 'storage_used_gb': round(storage_used_gb, 2),
                 'storage_total_gb': round(storage_total_gb, 2),
@@ -51,6 +55,8 @@ class SystemMonitor:
                 'ram_used_gb': 0.0,
                 'ram_total_gb': 0.0,
                 'gpu_percent': 0.0,
+                'gpu_used_mb': 0.0,
+                'gpu_total_mb': 0.0,
                 'storage_percent': 0.0,
                 'storage_used_gb': 0.0,
                 'storage_total_gb': 0.0,

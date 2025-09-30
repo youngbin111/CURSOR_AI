@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
+import SystemMonitorNew from './components/SystemMonitorNew';
+import PerformanceDashboardNew from './components/PerformanceDashboardNew';
+import DiskCleaner from './components/DiskCleanerNew';
+import SettingsPanel from './components/SettingsPanel';
+import HeaderNew from './components/HeaderNew';
+import NavigationBarNew from './components/NavigationBarNew';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('monitor');
+  const [activeTab, setActiveTab] = useState('grafana');
   const [systemData, setSystemData] = useState({
     cpu: 0,
     ram: 0,
-    storage: 0
+    storage: 0,
+    ramUsed: 0,
+    ramTotal: 0,
+    storageUsed: 0,
+    storageTotal: 0
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -20,7 +30,11 @@ function App() {
           setSystemData({
             cpu: data.cpu_percent || 0,
             ram: data.ram_percent || 0,
-            storage: data.storage_percent || 0
+            storage: data.storage_percent || 0,
+            ramUsed: data.ram_used_gb || 0,
+            ramTotal: data.ram_total_gb || 0,
+            storageUsed: data.storage_used_gb || 0,
+            storageTotal: data.storage_total_gb || 0
           });
         } else {
           console.error('API 응답 오류:', response.status, response.statusText);
@@ -55,73 +69,44 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
-                <span className="text-white text-xl">⚡</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">CleanBoost</h1>
-                <p className="text-sm text-gray-500">PC 성능 최적화 도구</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-600">실시간 연결됨</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* 네비게이션 */}
-      <nav className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('monitor')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'monitor'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              📊 시스템 모니터
-            </button>
-            <button
-              onClick={() => setActiveTab('cleaner')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'cleaner'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              🧹 디스크 정리
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'settings'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              ⚙️ 설정
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* 메인 컨텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'monitor' && <SystemMonitor systemData={systemData} />}
-        {activeTab === 'cleaner' && <DiskCleaner />}
+    <div 
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#0a0a0b',
+        backgroundImage: `
+          linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px)
+        `,
+        backgroundSize: '20px 20px',
+        display: 'flex',
+        height: '100vh'
+      }}
+    >
+      {/* Sidebar Navigation */}
+      <NavigationBarNew 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+      />
+      
+      {/* Main Content */}
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        overflow: 'hidden' 
+      }}>
+        <HeaderNew />
+        
+        <main style={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          padding: '24px' 
+        }}>
+          {activeTab === 'grafana' && <PerformanceDashboardNew />}
+          {activeTab === 'storage' && <DiskCleaner systemData={systemData} />}
         {activeTab === 'settings' && <SettingsPanel />}
       </main>
+      </div>
     </div>
   );
 }
@@ -142,6 +127,17 @@ const SystemMonitor = ({ systemData }) => {
 
   return (
     <div className="space-y-6">
+      {/* 강제 디버깅 정보 */}
+      <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-4 mb-4">
+        <h3 className="text-lg font-bold text-yellow-800">🚨 강제 디버깅 정보</h3>
+        <p className="text-sm text-yellow-700">
+          ramUsed: {systemData.ramUsed || 'undefined'} | ramTotal: {systemData.ramTotal || 'undefined'}
+        </p>
+        <p className="text-sm text-yellow-700">
+          전체 데이터: {JSON.stringify(systemData)}
+        </p>
+      </div>
+
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">실시간 시스템 모니터링</h2>
         <div className="flex items-center space-x-2">
@@ -196,6 +192,9 @@ const SystemMonitor = ({ systemData }) => {
           <div className={`text-3xl font-bold mb-2 ${getStatusColor(systemData.ram)}`}>
             {systemData.ram.toFixed(1)}%
           </div>
+          <div className="text-sm text-gray-600 mb-2">
+            {systemData.ramUsed.toFixed(1)}GB / {systemData.ramTotal.toFixed(1)}GB 사용 중
+          </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className={`h-2 rounded-full transition-all duration-300 ${
@@ -218,6 +217,9 @@ const SystemMonitor = ({ systemData }) => {
           </div>
           <div className={`text-3xl font-bold mb-2 ${getStatusColor(systemData.storage)}`}>
             {systemData.storage.toFixed(1)}%
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+            {systemData.storageUsed.toFixed(1)}GB / {systemData.storageTotal.toFixed(1)}GB 사용 중
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
@@ -264,187 +266,6 @@ const SystemMonitor = ({ systemData }) => {
   );
 };
 
-// 디스크 정리 컴포넌트
-const DiskCleaner = () => {
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResults, setScanResults] = useState(null);
 
-  const startScan = async () => {
-    setIsScanning(true);
-    try {
-      const response = await fetch('http://localhost:8000/api/v1/scan/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer demo-token'
-        }
-      });
-      
-      if (response.ok) {
-        setTimeout(async () => {
-          try {
-            const resultsResponse = await fetch('http://localhost:8000/api/v1/scan/results', {
-              headers: {
-                'Authorization': 'Bearer demo-token'
-              }
-            });
-            
-            if (resultsResponse.ok) {
-              const results = await resultsResponse.json();
-              setScanResults({
-                totalSize: results.total_scannable_size / (1024**3),
-                items: results.scan_results.map(item => ({
-                  name: item.name,
-                  size: item.size / (1024**3),
-                  type: item.type
-                }))
-              });
-            }
-          } catch (error) {
-            console.error('스캔 결과 가져오기 실패:', error);
-          }
-          setIsScanning(false);
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('스캔 시작 실패:', error);
-      setIsScanning(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">디스크 정리</h2>
-        <div className="flex items-center space-x-2">
-          <span className="text-green-600">🛡️</span>
-          <span className="text-sm text-gray-600">안전한 정리 도구</span>
-        </div>
-      </div>
-
-      {/* 스캔 시작 버튼 */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              시스템 스캔
-            </h3>
-            <p className="text-gray-600">
-              불필요한 파일과 프로그램 잔여물을 찾아 정리할 수 있습니다.
-            </p>
-          </div>
-          <button
-            onClick={startScan}
-            disabled={isScanning}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isScanning ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                <span>스캔 중...</span>
-              </>
-            ) : (
-              <>
-                <span>🔍</span>
-                <span>스캔 시작</span>
-              </>
-            )}
-          </button>
-        </div>
-        
-        {isScanning && (
-          <div className="mt-4">
-            <div className="flex items-center space-x-2 text-blue-600">
-              <span className="animate-spin">⏳</span>
-              <span className="text-sm">시스템을 스캔하고 있습니다...</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 스캔 결과 */}
-      {scanResults && (
-        <div className="space-y-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <div className="flex items-center space-x-3">
-              <span className="text-3xl">✅</span>
-              <div>
-                <h3 className="text-lg font-semibold text-green-800">
-                  {scanResults.totalSize.toFixed(2)}GB 확보 가능
-                </h3>
-                <p className="text-green-600">
-                  안전하게 삭제할 수 있는 파일들을 찾았습니다.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">스캔 결과</h3>
-            <div className="space-y-3">
-              {scanResults.items.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    />
-                    <div>
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      <p className="text-sm text-gray-500">{item.type}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{item.size.toFixed(2)}GB</p>
-                    <p className="text-sm text-gray-500">삭제 가능</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 설정 패널 컴포넌트
-const SettingsPanel = () => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">설정</h2>
-        <div className="flex items-center space-x-2">
-          <span className="text-blue-600">⚙️</span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <span className="text-2xl">ℹ️</span>
-          <h3 className="text-lg font-semibold text-gray-900">앱 정보</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">버전</p>
-            <p className="font-semibold text-gray-900">1.0.0</p>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">플랫폼</p>
-            <p className="font-semibold text-gray-900">Windows</p>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">상태</p>
-            <p className="font-semibold text-green-600">정상</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default App;

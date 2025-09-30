@@ -1,51 +1,44 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
-  Search, 
   Trash2, 
-  CheckCircle, 
-  AlertTriangle,
-  HardDrive,
-  FileText,
-  Clock,
-  Shield,
+  FolderOpen, 
+  FileText, 
+  Image, 
+  Video, 
+  Music,
   Download,
-  RefreshCw
+  Archive,
+  AlertTriangle,
+  CheckCircle,
+  Play,
+  RotateCcw
 } from 'lucide-react';
+import GlassPanel from './GlassPanel';
+import CircularGauge from './CircularGauge';
+import Button from './ui/Button';
+import Progress from './ui/Progress';
 
 const DiskCleaner = () => {
   const [isScanning, setIsScanning] = useState(false);
-  const [scanResults, setScanResults] = useState(null);
-  const [selectedItems, setSelectedItems] = useState([]);
   const [isCleaning, setIsCleaning] = useState(false);
-  const [cleanResults, setCleanResults] = useState(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [cleanupProgress, setCleanupProgress] = useState(0);
+  const [totalDiskSpace] = useState(512); // GB
+  const [usedSpace, setUsedSpace] = useState(387);
+  const [categories, setCategories] = useState([
+    { id: 'temp', name: '임시 파일', icon: FileText, size: 2.4, count: 1247, color: 'blue', selected: true },
+    { id: 'cache', name: '캐시 파일', icon: Archive, size: 1.8, count: 895, color: 'green', selected: true },
+    { id: 'downloads', name: '다운로드', icon: Download, size: 15.2, count: 156, color: 'purple', selected: false },
+    { id: 'images', name: '중복 이미지', icon: Image, size: 3.7, count: 284, color: 'blue', selected: true },
+    { id: 'videos', name: '대용량 비디오', icon: Video, size: 8.9, count: 23, color: 'green', selected: false },
+    { id: 'music', name: '음악 파일', icon: Music, size: 4.3, count: 567, color: 'purple', selected: false },
+  ]);
 
-  // 스캔 시작
-  const startScan = async () => {
+  const scanDisk = async () => {
     setIsScanning(true);
-    setScanResults(null);
-    setCleanResults(null);
-    
-    try {
-      const response = await fetch('http://localhost:8000/api/v1/scan/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + generateAuthToken()
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.scanId) {
-          // 스캔 진행 상태 확인
-          checkScanProgress(data.scanId);
-        }
-      }
-    } catch (error) {
-      console.error('스캔 시작 실패:', error);
-      setIsScanning(false);
-    }
+    // 스캔 시뮬레이션
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    setIsScanning(false);
   };
 
   // 스캔 진행 상태 확인
@@ -160,9 +153,141 @@ const DiskCleaner = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // 파일 확장자별 그룹화
+  const groupFilesByExtension = (files) => {
+    const groups = {};
+    files.forEach(file => {
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'no-extension';
+      if (!groups[extension]) {
+        groups[extension] = {
+          files: [],
+          totalSize: 0,
+          count: 0
+        };
+      }
+      groups[extension].files.push(file);
+      groups[extension].totalSize += file.size;
+      groups[extension].count += 1;
+    });
+    return groups;
+  };
+
+  // 파일 타입별 아이콘
+  const getFileIcon = (extension) => {
+    const iconMap = {
+      'tmp': '🗂️',
+      'log': '📄',
+      'cache': '💾',
+      'temp': '🗂️',
+      'bak': '📦',
+      'old': '📦',
+      'no-extension': '📄',
+      'txt': '📄',
+      'dat': '💾',
+      'db': '🗄️',
+      'sqlite': '🗄️',
+      'json': '📋',
+      'xml': '📋',
+      'html': '🌐',
+      'css': '🎨',
+      'js': '⚡',
+      'jpg': '🖼️',
+      'jpeg': '🖼️',
+      'png': '🖼️',
+      'gif': '🖼️',
+      'mp4': '🎬',
+      'avi': '🎬',
+      'mp3': '🎵',
+      'wav': '🎵',
+      'pdf': '📕',
+      'doc': '📘',
+      'docx': '📘',
+      'xls': '📊',
+      'xlsx': '📊',
+      'ppt': '📽️',
+      'pptx': '📽️',
+      'zip': '📦',
+      'rar': '📦',
+      '7z': '📦',
+      'exe': '⚙️',
+      'msi': '⚙️',
+      'dll': '🔧',
+      'sys': '🔧'
+    };
+    return iconMap[extension] || '📄';
+  };
+
+  // 파일 타입별 색상
+  const getFileTypeColor = (extension) => {
+    const colorMap = {
+      'tmp': 'text-orange-600',
+      'log': 'text-blue-600',
+      'cache': 'text-purple-600',
+      'temp': 'text-orange-600',
+      'bak': 'text-yellow-600',
+      'old': 'text-yellow-600',
+      'no-extension': 'text-gray-600',
+      'txt': 'text-blue-600',
+      'dat': 'text-green-600',
+      'db': 'text-indigo-600',
+      'sqlite': 'text-indigo-600',
+      'json': 'text-green-600',
+      'xml': 'text-green-600',
+      'html': 'text-red-600',
+      'css': 'text-blue-600',
+      'js': 'text-yellow-600',
+      'jpg': 'text-pink-600',
+      'jpeg': 'text-pink-600',
+      'png': 'text-pink-600',
+      'gif': 'text-pink-600',
+      'mp4': 'text-red-600',
+      'avi': 'text-red-600',
+      'mp3': 'text-purple-600',
+      'wav': 'text-purple-600',
+      'pdf': 'text-red-600',
+      'doc': 'text-blue-600',
+      'docx': 'text-blue-600',
+      'xls': 'text-green-600',
+      'xlsx': 'text-green-600',
+      'ppt': 'text-orange-600',
+      'pptx': 'text-orange-600',
+      'zip': 'text-yellow-600',
+      'rar': 'text-yellow-600',
+      '7z': 'text-yellow-600',
+      'exe': 'text-gray-600',
+      'msi': 'text-gray-600',
+      'dll': 'text-gray-600',
+      'sys': 'text-gray-600'
+    };
+    return colorMap[extension] || 'text-gray-600';
+  };
+
   // 선택된 항목의 총 크기 계산
   const getSelectedSize = () => {
     return selectedItems.reduce((total, item) => total + item.size, 0);
+  };
+
+  // 섹션 접기/펼치기 토글
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // 긴 경로를 줄여서 표시하는 함수
+  const truncatePath = (path, maxLength = 50) => {
+    if (path.length <= maxLength) return path;
+    const parts = path.split('\\');
+    if (parts.length > 3) {
+      return `...\\${parts.slice(-2).join('\\')}`;
+    }
+    return path.substring(0, maxLength - 3) + '...';
+  };
+
+  // 파일명만 추출하는 함수
+  const getFileName = (path) => {
+    return path.split('\\').pop() || path.split('/').pop() || path;
   };
 
   return (
@@ -236,12 +361,20 @@ const DiskCleaner = () => {
             </div>
           </div>
 
-          {/* 대용량 임시 파일 */}
+          {/* 대용량 임시 파일 - 확장자별 그룹화 */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
-                <FileText className="w-6 h-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">대용량 임시 파일</h3>
+                <button
+                  onClick={() => toggleSection('tempFiles')}
+                  className="flex items-center space-x-2 hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                >
+                  <FileText className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">대용량 임시 파일</h3>
+                  <span className="text-gray-500">
+                    {expandedSections.tempFiles ? '▼' : '▶'}
+                  </span>
+                </button>
               </div>
               <button
                 onClick={() => toggleAllItems('TEMP_FILES')}
@@ -251,38 +384,101 @@ const DiskCleaner = () => {
               </button>
             </div>
             
-            <div className="space-y-3">
-              {scanResults.scan_results
-                .filter(item => item.type === 'TEMP_FILES')
-                .map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.some(selected => selected.path === item.path)}
-                        onChange={() => toggleItem(item)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-500">{item.path}</p>
+            {expandedSections.tempFiles && (() => {
+              const tempFiles = scanResults.scan_results.filter(item => item.type === 'TEMP_FILES');
+              const groupedFiles = groupFilesByExtension(tempFiles);
+              const sortedGroups = Object.entries(groupedFiles).sort((a, b) => b[1].totalSize - a[1].totalSize);
+              
+              return (
+                <div className="space-y-4">
+                  {sortedGroups.map(([extension, group]) => (
+                    <div key={extension} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">{getFileIcon(extension)}</span>
+                          <div>
+                            <h4 className={`font-semibold ${getFileTypeColor(extension)}`}>
+                              .{extension.toUpperCase()} 파일
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              {group.count}개 파일 • {formatFileSize(group.totalSize)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const allSelected = group.files.every(file => 
+                              selectedItems.some(selected => selected.path === file.path)
+                            );
+                            if (allSelected) {
+                              setSelectedItems(prev => 
+                                prev.filter(selected => 
+                                  !group.files.some(file => file.path === selected.path)
+                                )
+                              );
+                            } else {
+                              setSelectedItems(prev => {
+                                const newItems = group.files.filter(file => 
+                                  !prev.some(selected => selected.path === file.path)
+                                );
+                                return [...prev, ...newItems];
+                              });
+                            }
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          {group.files.every(file => 
+                            selectedItems.some(selected => selected.path === file.path)
+                          ) ? '전체 해제' : '전체 선택'}
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {group.files.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100">
+                            <div className="flex items-center space-x-3 flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.some(selected => selected.path === item.path)}
+                                onChange={() => toggleItem(item)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 truncate" title={getFileName(item.path)}>
+                                  {getFileName(item.path)}
+                                </p>
+                                <p className="text-sm text-gray-500 truncate" title={item.path}>
+                                  {truncatePath(item.path)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <p className="font-semibold text-gray-900">{formatFileSize(item.size)}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">{formatFileSize(item.size)}</p>
-                      <p className="text-sm text-gray-500">삭제 가능</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
-          {/* 프로그램 잔여물 */}
+          {/* 프로그램 잔여물 - 확장자별 그룹화 */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
-                <HardDrive className="w-6 h-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-900">프로그램 잔여물</h3>
+                <button
+                  onClick={() => toggleSection('programRemains')}
+                  className="flex items-center space-x-2 hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                >
+                  <HardDrive className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">프로그램 잔여물</h3>
+                  <span className="text-gray-500">
+                    {expandedSections.programRemains ? '▼' : '▶'}
+                  </span>
+                </button>
               </div>
               <button
                 onClick={() => toggleAllItems('PROGRAM_REMAINS')}
@@ -292,30 +488,85 @@ const DiskCleaner = () => {
               </button>
             </div>
             
-            <div className="space-y-3">
-              {scanResults.scan_results
-                .filter(item => item.type === 'PROGRAM_REMAINS')
-                .map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.some(selected => selected.path === item.path)}
-                        onChange={() => toggleItem(item)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-500">{item.path}</p>
+            {expandedSections.programRemains && (() => {
+              const programFiles = scanResults.scan_results.filter(item => item.type === 'PROGRAM_REMAINS');
+              const groupedFiles = groupFilesByExtension(programFiles);
+              const sortedGroups = Object.entries(groupedFiles).sort((a, b) => b[1].totalSize - a[1].totalSize);
+              
+              return (
+                <div className="space-y-4">
+                  {sortedGroups.map(([extension, group]) => (
+                    <div key={extension} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">{getFileIcon(extension)}</span>
+                          <div>
+                            <h4 className={`font-semibold ${getFileTypeColor(extension)}`}>
+                              .{extension.toUpperCase()} 파일
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              {group.count}개 파일 • {formatFileSize(group.totalSize)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const allSelected = group.files.every(file => 
+                              selectedItems.some(selected => selected.path === file.path)
+                            );
+                            if (allSelected) {
+                              setSelectedItems(prev => 
+                                prev.filter(selected => 
+                                  !group.files.some(file => file.path === selected.path)
+                                )
+                              );
+                            } else {
+                              setSelectedItems(prev => {
+                                const newItems = group.files.filter(file => 
+                                  !prev.some(selected => selected.path === file.path)
+                                );
+                                return [...prev, ...newItems];
+                              });
+                            }
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          {group.files.every(file => 
+                            selectedItems.some(selected => selected.path === file.path)
+                          ) ? '전체 해제' : '전체 선택'}
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {group.files.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100">
+                            <div className="flex items-center space-x-3 flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.some(selected => selected.path === item.path)}
+                                onChange={() => toggleItem(item)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 truncate" title={getFileName(item.path)}>
+                                  {getFileName(item.path)}
+                                </p>
+                                <p className="text-sm text-gray-500 truncate" title={item.path}>
+                                  {truncatePath(item.path)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <p className="font-semibold text-gray-900">{formatFileSize(item.size)}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">{formatFileSize(item.size)}</p>
-                      <p className="text-sm text-gray-500">삭제 가능</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* 정리 실행 버튼 */}

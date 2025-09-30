@@ -2,6 +2,9 @@
 echo CleanBoost 앱을 시작합니다...
 echo.
 
+REM 현재 스크립트가 있는 디렉토리로 이동
+cd /d "%~dp0"
+
 REM Python이 설치되어 있는지 확인
 python --version >nul 2>&1
 if errorlevel 1 (

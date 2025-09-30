@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const isDev = process.env.NODE_ENV === 'development';
+// 🔥 강제 개발 모드 (빌드 파일 사용 방지)
+const isDev = true;
 
 let mainWindow;
 
@@ -26,6 +27,7 @@ function createWindow() {
   const startUrl = isDev 
     ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, '../build/index.html')}`;
+  
   
   mainWindow.loadURL(startUrl);
 

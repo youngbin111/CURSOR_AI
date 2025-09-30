@@ -11,8 +11,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f9fafb;
-  color: #111827;
+  background-color: #0a0a0b;
+  color: #ffffff;
 }
 
 /* 유틸리티 클래스 */
@@ -534,6 +534,138 @@ body {
   50% {
     opacity: .5;
   }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Figma 디자인 스타일 */
+.cyber-grid {
+  background-color: #0a0a0b;
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-\[#0a0a0b\] {
+  background-color: #0a0a0b;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #00d4ff, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 글래스 패널 기본 스타일 */
+.glass-panel {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+}
+
+.border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.border-white\/30 {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.text-gray-400 {
+  color: #9ca3af;
+}
+
+.text-gray-300 {
+  color: #d1d5db;
+}
+
+.text-\[#00d4ff\] {
+  color: #00d4ff;
+}
+
+.text-\[#00ff88\] {
+  color: #00ff88;
+}
+
+.text-\[#a855f7\] {
+  color: #a855f7;
+}
+
+.bg-\[#00d4ff\]\/20 {
+  background-color: rgba(0, 212, 255, 0.2);
+}
+
+.bg-\[#00d4ff\]\/30 {
+  background-color: rgba(0, 212, 255, 0.3);
+}
+
+.border-\[#00d4ff\]\/30 {
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.shadow-\[0_0_20px_rgba\(0,212,255,0\.3\)\] {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.shadow-\[0_0_20px_rgba\(0,255,136,0\.3\)\] {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.shadow-\[0_0_20px_rgba\(168,85,247,0\.3\)\] {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.lg\:col-span-1 {
+  grid-column: span 1 / span 1;
+}
+
+.lg\:col-span-2 {
+  grid-column: span 2 / span 2;
 }
 
 /* 반응형 */

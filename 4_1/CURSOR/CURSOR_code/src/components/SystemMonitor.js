@@ -17,6 +17,8 @@ const SystemMonitor = () => {
     storage: 0,
     ramUsed: 0,
     ramTotal: 0,
+    gpuUsed: 0,
+    gpuTotal: 0,
     storageUsed: 0,
     storageTotal: 0
   });
@@ -25,30 +27,17 @@ const SystemMonitor = () => {
   const [warnings, setWarnings] = useState([]);
   const socketRef = useRef(null);
 
-  // Socket.IO 연결
+  // REST API로 데이터 가져오기
   useEffect(() => {
-    const connectSocket = () => {
+    const fetchSystemData = async () => {
       try {
-        // Socket.IO 연결 시도
-        const io = require('socket.io-client');
-        socketRef.current = io('http://localhost:8000', {
-          transports: ['websocket'],
-          timeout: 5000
-        });
-
-        socketRef.current.on('connect', () => {
-          console.log('Socket.IO 연결됨');
-          setIsMonitoring(true);
-        });
-
-        socketRef.current.on('disconnect', () => {
-          console.log('Socket.IO 연결 끊김');
-          setIsMonitoring(false);
-        });
-
-        // 실시간 시스템 데이터 수신
-        socketRef.current.on('system_status', (data) => {
-          setSystemData(prev => ({
+        console.log('시스템 데이터 가져오는 중...');
+        const response = await fetch('http://localhost:8000/api/v1/system/status');
+        const data = await response.json();
+        
+        console.log('받은 데이터:', data);
+        setSystemData(prev => {
+          const newData = {
             ...prev,
             cpu: data.cpu_percent || 0,
             ram: data.ram_percent || 0,
@@ -56,37 +45,29 @@ const SystemMonitor = () => {
             storage: data.storage_percent || 0,
             ramUsed: data.ram_used_gb || 0,
             ramTotal: data.ram_total_gb || 0,
+            gpuUsed: data.gpu_used_mb || 0,
+            gpuTotal: data.gpu_total_mb || 0,
             storageUsed: data.storage_used_gb || 0,
             storageTotal: data.storage_total_gb || 0
-          }));
+          };
+          console.log('업데이트된 데이터:', newData);
+          return newData;
         });
-
-        // 경고 메시지 수신
-        socketRef.current.on('warning_trigger', (data) => {
-          setWarnings(prev => [...prev, {
-            id: Date.now(),
-            type: data.type,
-            message: data.message,
-            timestamp: new Date()
-          }]);
-        });
-
-        // 모니터링 시작
-        socketRef.current.emit('monitor_toggle', { active: true });
-
+        setIsMonitoring(true);
       } catch (error) {
-        console.error('Socket.IO 연결 실패:', error);
+        console.error('데이터 가져오기 실패:', error);
         setIsMonitoring(false);
       }
     };
 
-    connectSocket();
+    // 초기 데이터 로드
+    fetchSystemData();
+
+    // 1초마다 데이터 업데이트
+    const interval = setInterval(fetchSystemData, 1000);
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('monitor_toggle', { active: false });
-        socketRef.current.disconnect();
-      }
+      clearInterval(interval);
     };
   }, []);
 
@@ -137,6 +118,17 @@ const SystemMonitor = () => {
         </div>
       </div>
 
+      {/* 강제 디버깅 정보 */}
+      <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-4 mb-4">
+        <h3 className="text-lg font-bold text-yellow-800">🚨 강제 디버깅 정보</h3>
+        <p className="text-sm text-yellow-700">
+          ramUsed: {systemData.ramUsed} | ramTotal: {systemData.ramTotal}
+        </p>
+        <p className="text-sm text-yellow-700">
+          전체 데이터: {JSON.stringify(systemData)}
+        </p>
+      </div>
+
       {/* 시스템 리소스 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* CPU */}
@@ -152,6 +144,9 @@ const SystemMonitor = () => {
             <span className={getStatusColor(systemData.cpu)}>
               {systemData.cpu.toFixed(1)}%
             </span>
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+            {systemData.cpu.toFixed(1)}% 사용 중
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
@@ -179,7 +174,11 @@ const SystemMonitor = () => {
             </span>
           </div>
           <div className="text-sm text-gray-600 mb-2">
-            {systemData.ramUsed.toFixed(1)}GB / {systemData.ramTotal.toFixed(1)}GB
+            {systemData.ramUsed.toFixed(1)}GB / {systemData.ramTotal.toFixed(1)}GB 사용 중
+            <br />
+            <small className="text-xs text-red-500 font-bold">
+              🔥 디버그: ramUsed={systemData.ramUsed}, ramTotal={systemData.ramTotal}
+            </small>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
@@ -205,6 +204,12 @@ const SystemMonitor = () => {
             <span className={getStatusColor(systemData.gpu)}>
               {systemData.gpu.toFixed(1)}%
             </span>
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+            {systemData.gpuUsed > 0 ? 
+              `${systemData.gpuUsed.toFixed(1)}MB / ${systemData.gpuTotal.toFixed(1)}MB 사용 중` : 
+              'GPU 정보 없음'
+            }
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
@@ -232,7 +237,7 @@ const SystemMonitor = () => {
             </span>
           </div>
           <div className="text-sm text-gray-600 mb-2">
-            {systemData.storageUsed.toFixed(1)}GB / {systemData.storageTotal.toFixed(1)}GB
+            {systemData.storageUsed.toFixed(1)}GB / {systemData.storageTotal.toFixed(1)}GB 사용 중
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 

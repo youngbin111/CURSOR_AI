@@ -20,9 +20,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from services.system_monitor import SystemMonitor
 from services.disk_cleaner import DiskCleaner
 from services.auth import AuthService
+from services.program_remains import ProgramRemainsService
 from models.schemas import (
     ScanRequest, ScanResponse, CleanRequest, CleanResponse,
-    SystemStatus, WarningTrigger
+    SystemStatus, WarningTrigger, ProgramRemainsRequest, 
+    ProgramRemainsResponse, RemainsCleanRequest, RemainsCleanResponse
 )
 
 # FastAPI 앱 초기화
@@ -52,6 +54,7 @@ sio = socketio.AsyncServer(
 system_monitor = SystemMonitor()
 disk_cleaner = DiskCleaner()
 auth_service = AuthService()
+program_remains_service = ProgramRemainsService()
 
 # 인증 스키마
 security = HTTPBearer()
@@ -150,7 +153,7 @@ async def get_system_status():
         )
 
 @app.post("/api/v1/scan/start", response_model=ScanResponse)
-async def start_scan(current_user: str = Depends(get_current_user)):
+async def start_scan():
     """잔여물 스캔 시작"""
     try:
         scan_id = str(uuid.uuid4())
@@ -169,7 +172,7 @@ async def start_scan(current_user: str = Depends(get_current_user)):
         )
 
 @app.get("/api/v1/scan/results", response_model=Dict)
-async def get_scan_results(current_user: str = Depends(get_current_user)):
+async def get_scan_results():
     """스캔 결과 조회"""
     if not scan_results_cache:
         raise HTTPException(
@@ -180,7 +183,7 @@ async def get_scan_results(current_user: str = Depends(get_current_user)):
     return scan_results_cache
 
 @app.post("/api/v1/clean/execute", response_model=CleanResponse)
-async def execute_clean(clean_request: CleanRequest, current_user: str = Depends(get_current_user)):
+async def execute_clean(clean_request: CleanRequest):
     """선택 항목 삭제 실행"""
     try:
         # 안전성 검증
@@ -204,6 +207,58 @@ async def execute_clean(clean_request: CleanRequest, current_user: str = Depends
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"정리 작업 실행에 실패했습니다: {str(e)}"
+        )
+
+@app.post("/api/v1/scan/remains", response_model=ProgramRemainsResponse)
+async def scan_program_remains(remains_request: ProgramRemainsRequest):
+    """프로그램 잔여물 검색"""
+    try:
+        if not remains_request.program_name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="프로그램 이름을 입력해주세요."
+            )
+        
+        # 프로그램 잔여물 검색
+        result = await program_remains_service.search_program_remains(remains_request.program_name.strip())
+        
+        return ProgramRemainsResponse(
+            program_name=result['program_name'],
+            appdata_items=result['appdata_items'],
+            registry_items=result['registry_items'],
+            total_size=result['total_size']
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"프로그램 잔여물 검색에 실패했습니다: {str(e)}"
+        )
+
+@app.post("/api/v1/clean/remains", response_model=RemainsCleanResponse)
+async def clean_program_remains(clean_request: RemainsCleanRequest):
+    """프로그램 잔여물 정리"""
+    try:
+        if not clean_request.items_to_delete:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="삭제할 항목을 선택해주세요."
+            )
+        
+        # 잔여물 정리 실행
+        result = await program_remains_service.clean_remains(clean_request.items_to_delete)
+        
+        return RemainsCleanResponse(
+            message="잔여물 정리가 완료되었습니다.",
+            total_cleaned_size=result['total_cleaned_size'],
+            deleted_count=result['deleted_count'],
+            error_count=result['error_count']
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"잔여물 정리에 실패했습니다: {str(e)}"
         )
 
 async def perform_scan(scan_id: str):

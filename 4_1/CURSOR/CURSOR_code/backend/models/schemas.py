@@ -54,3 +54,25 @@ class ScanResult(BaseModel):
     size: int = Field(..., description="파일 크기 (바이트)")
     safe_to_delete: bool = Field(default=True, description="안전하게 삭제 가능한지 여부")
 
+class ProgramRemainsRequest(BaseModel):
+    """프로그램 잔여물 검색 요청 모델"""
+    program_name: str = Field(..., description="검색할 프로그램 이름")
+
+class ProgramRemainsResponse(BaseModel):
+    """프로그램 잔여물 검색 응답 모델"""
+    program_name: str = Field(..., description="검색된 프로그램 이름")
+    appdata_items: List[Dict[str, Any]] = Field(..., description="AppData 폴더 잔여물 목록")
+    registry_items: List[Dict[str, Any]] = Field(..., description="레지스트리 잔여물 목록")
+    total_size: int = Field(..., description="총 잔여물 크기 (바이트)")
+
+class RemainsCleanRequest(BaseModel):
+    """잔여물 정리 요청 모델"""
+    items_to_delete: List[Dict[str, Any]] = Field(..., description="삭제할 잔여물 목록")
+
+class RemainsCleanResponse(BaseModel):
+    """잔여물 정리 응답 모델"""
+    message: str
+    total_cleaned_size: int = Field(..., description="정리된 총 크기 (바이트)")
+    deleted_count: int = Field(..., description="삭제된 항목 개수")
+    error_count: int = Field(..., description="오류 발생 개수")
+
